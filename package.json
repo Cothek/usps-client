@@ -3,21 +3,20 @@
   "version": "1.0.0",
   "description": "Standalone USPS API client for labels, rates, and addresses.",
   "type": "module",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
-    ".": "./index.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
   },
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build"
   },
   "files": [
-    "dist",
-    "index.ts",
-    "usps-client.ts",
-    "schemas.ts",
-    "types.ts"
+    "dist"
   ],
   "peerDependencies": {
     "pdf-lib": "^1.17.1",
