@@ -6,7 +6,7 @@ A modular, side-effect-free library for interacting with the USPS APIs (OAuth2, 
 
 You can use this library in other projects by adding it to your `package.json`.
 
-### Option A: Local File (Monorepo or Shared Folder)
+### Option A: Local File (Fastest for local dev)
 
 If the library lives on the same machine as your other project:
 
@@ -14,12 +14,16 @@ If the library lives on the same machine as your other project:
 npm install file:../path-to-this-folder/src/lib/usps-client
 ```
 
-### Option B: GitHub Repository (Recommended)
+### Option B: GitHub Repository (Recommended for Cloud/Teams)
 
-Once you have pushed this folder to its own GitHub repository:
+If your environment does not have SSH configured (common in cloud IDEs), use the **HTTPS** or **shortcut** syntax:
 
 ```bash
-npm install github:Cothek/usps-client
+# Using the shortcut (most compatible)
+npm install github:YOUR_USERNAME/usps-client
+
+# OR using the full HTTPS URL
+npm install https://github.com/YOUR_USERNAME/usps-client.git
 ```
 
 ### Peer Dependencies
