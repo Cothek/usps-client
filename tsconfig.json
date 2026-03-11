@@ -1,15 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es2020",
-    "module": "commonjs",
-    "outDir": "./dist",
-    "rootDir": "./",
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "declaration": true
+    "outDir": "./dist",
+    "declaration": true,
+    "rootDir": "."
   },
-  "include": ["**/*.ts"],
+  "include": ["index.ts", "usps-client.ts", "schemas.ts", "types.ts"],
   "exclude": ["node_modules", "dist"]
 }
