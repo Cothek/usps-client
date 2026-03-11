@@ -3,9 +3,9 @@
  * Exports all functional modules and types for external consumption.
  */
 
-export * from './auth';
-export * from './address';
-export * from './rates';
-export * from './labels';
+import USPSClient from './USPSClient';
+
+export default USPSClient;
+
 export * from './constants';
 export * from './types';

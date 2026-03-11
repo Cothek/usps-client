@@ -5,7 +5,8 @@
 export interface UspsClientConfig {
   consumerKey: string;
   consumerSecret: string;
-  isProduction: boolean;
+  env: 'production' | 'development';
+  originZip: string;
 }
 
 export interface AddressForValidation {
