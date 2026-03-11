@@ -1,6 +1,6 @@
 import { PDFDocument } from 'pdf-lib';
-import { AddressForValidation, LabelConfig, Rate, RateRequestData, UspsClientConfig, ValidatedAddress } from './types';
-import { serviceFilterMap } from './constants';
+import { AddressForValidation, LabelConfig, Rate, RateRequestData, UspsClientConfig, ValidatedAddress } from './types.js';
+import { serviceFilterMap } from './constants.js';
 
 export default class USPSClient {
   private config: UspsClientConfig;

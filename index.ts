@@ -3,9 +3,9 @@
  * Exports all functional modules and types for external consumption.
  */
 
-import USPSClient from './USPSClient';
+import USPSClient from './USPSClient.js';
 
 export default USPSClient;
 
-export * from './constants';
-export * from './types';
+export * from './constants.js';
+export * from './types.js';
