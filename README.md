@@ -2,51 +2,81 @@
 
 A modular, side-effect-free library for interacting with the USPS APIs (OAuth2, Address Validation, Rate Calculation, and Label Generation).
 
+## Installation in Other Projects
+
+You can use this library in other projects by adding it to your `package.json`.
+
+### Option A: Local File (Monorepo or Shared Folder)
+
+If the library lives on the same machine as your other project:
+
+```bash
+npm install file:../path-to-this-folder/src/lib/usps-client
+```
+
+### Option B: GitHub Repository (Recommended)
+
+Once you have pushed this folder to its own GitHub repository:
+
+```bash
+npm install github:Cothek/usps-client
+```
+
+### Peer Dependencies
+
+Ensure your target project has the required peer dependencies installed:
+
+```bash
+npm install pdf-lib zod
+```
+
 ## Features
+
 - **OAuth2**: Handles token lifecycle.
 - **Address**: DPV validation and cleansing.
 - **Rates**: Commercial base rate search with support for custom service filtering.
 - **Labels**: PDF label generation with automatic cropping to 4x6 format.
 
-## Dependencies
-- `pdf-lib`: Required for label cropping and processing.
-- `zod`: Required for schema validation.
-
 ## Required Environment Variables
 
-To use this library effectively within an application, you should define the following variables in your `.env` file and pass them to the library functions:
+To use this library effectively, define the following variables in your `.env` file:
 
 ### API Credentials
+
 - `USPS_CONSUMER_KEY`: Your USPS API Consumer Key.
 - `USPS_CONSUMER_SECRET`: Your USPS API Consumer Secret.
-- `NEXT_PUBLIC_APP_ENV`: Set to `production` to target live APIs, otherwise targets the TEM (Test) environment.
+- `NEXT_PUBLIC_APP_ENV`: Set to `production` to target live APIs, otherwise targets TEM (Test).
 
 ### Label Generation (Payment & Identity)
+
 - `USPS_MID_NUMBER`: Your USPS Mailer ID.
 - `USPS_CRID_NUMBER`: Your USPS Customer Registration ID.
 - `USPS_EPS_ACCOUNT_NUMBER`: Your USPS Enterprise Payment System account number.
 
 ### Origin Address (Sender)
+
 - `USPS_FROM_NAME`: Sender name/Firm name.
 - `USPS_FROM_ADDRESS1`: Street address.
 - `USPS_FROM_CITY`: City.
 - `USPS_FROM_STATE`: State (2-letter code).
 - `USPS_FROM_ZIP5`: 5-digit ZIP code.
 
-## Usage
+## Usage Example
 
 ### 1. Authentication
+
 ```typescript
-import { getUspsAccessToken } from 'usps-client';
+import { getUspsAccessToken } from "usps-client";
 
 const token = await getUspsAccessToken({
   consumerKey: process.env.USPS_CONSUMER_KEY,
   consumerSecret: process.env.USPS_CONSUMER_SECRET,
-  isProduction: process.env.NEXT_PUBLIC_APP_ENV === 'production'
+  isProduction: process.env.NEXT_PUBLIC_APP_ENV === "production",
 });
 ```
 
 ### 2. Label Creation
+
 ```typescript
 import { createLabel } from 'usps-client';
 
@@ -65,4 +95,5 @@ const label = await createLabel({
 ```
 
 ## License
+
 MIT
