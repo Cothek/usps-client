@@ -23,8 +23,18 @@ If your environment does not have SSH configured (common in cloud IDEs), use the
 npm install github:Cothek/usps-client
 
 # OR using the full HTTPS URL
-npm install https://github.com/Cothek/usps-client.git
+npm install git+https://github.com/Cothek/usps-client.git
 ```
+
+### Troubleshooting: "ssh: command not found"
+
+If you encounter an error like `ssh: command not found` or `fatal: Could not read from remote repository` while installing, it is because your environment is trying to use SSH instead of HTTPS. Run the following command in your terminal to force Git to use HTTPS for GitHub:
+
+```bash
+git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+```
+
+After running this command, try the `npm install` again.
 
 ### Peer Dependencies
 
