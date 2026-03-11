@@ -20,10 +20,10 @@ If your environment does not have SSH configured (common in cloud IDEs), use the
 
 ```bash
 # Using the shortcut (most compatible)
-npm install github:YOUR_USERNAME/usps-client
+npm install github:Cothek/usps-client
 
 # OR using the full HTTPS URL
-npm install https://github.com/YOUR_USERNAME/usps-client.git
+npm install https://github.com/Cothek/usps-client.git
 ```
 
 ### Peer Dependencies
