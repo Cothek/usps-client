@@ -1,4 +1,3 @@
-
 # USPS Standalone Client
 
 A modular, side-effect-free library for interacting with the USPS APIs (OAuth2, Address Validation, Rate Calculation, and Label Generation).
@@ -11,23 +10,59 @@ A modular, side-effect-free library for interacting with the USPS APIs (OAuth2, 
 
 ## Dependencies
 - `pdf-lib`: Required for label cropping and processing.
-- `zod`: Required for schema validation (if used in consumer).
+- `zod`: Required for schema validation.
+
+## Required Environment Variables
+
+To use this library effectively within an application, you should define the following variables in your `.env` file and pass them to the library functions:
+
+### API Credentials
+- `USPS_CONSUMER_KEY`: Your USPS API Consumer Key.
+- `USPS_CONSUMER_SECRET`: Your USPS API Consumer Secret.
+- `NEXT_PUBLIC_APP_ENV`: Set to `production` to target live APIs, otherwise targets the TEM (Test) environment.
+
+### Label Generation (Payment & Identity)
+- `USPS_MID_NUMBER`: Your USPS Mailer ID.
+- `USPS_CRID_NUMBER`: Your USPS Customer Registration ID.
+- `USPS_EPS_ACCOUNT_NUMBER`: Your USPS Enterprise Payment System account number.
+
+### Origin Address (Sender)
+- `USPS_FROM_NAME`: Sender name/Firm name.
+- `USPS_FROM_ADDRESS1`: Street address.
+- `USPS_FROM_CITY`: City.
+- `USPS_FROM_STATE`: State (2-letter code).
+- `USPS_FROM_ZIP5`: 5-digit ZIP code.
 
 ## Usage
-Initialize the client by passing configuration directly to the functional modules.
 
+### 1. Authentication
 ```typescript
-import { createLabel, getUspsAccessToken } from './usps-client';
+import { getUspsAccessToken } from 'usps-client';
 
 const token = await getUspsAccessToken({
-  consumerKey: '...',
-  consumerSecret: '...',
-  isProduction: false
-});
-
-const label = await createLabel({
-  accessToken: token,
-  isProduction: false,
-  config: { ... }
+  consumerKey: process.env.USPS_CONSUMER_KEY,
+  consumerSecret: process.env.USPS_CONSUMER_SECRET,
+  isProduction: process.env.NEXT_PUBLIC_APP_ENV === 'production'
 });
 ```
+
+### 2. Label Creation
+```typescript
+import { createLabel } from 'usps-client';
+
+const label = await createLabel({
+  accessToken: '...',
+  isProduction: false,
+  config: {
+    mid: process.env.USPS_MID_NUMBER,
+    crid: process.env.USPS_CRID_NUMBER,
+    epsAccountNumber: process.env.USPS_EPS_ACCOUNT_NUMBER,
+    fromAddress: { ... },
+    toAddress: { ... },
+    packageDetails: { ... }
+  }
+});
+```
+
+## License
+MIT
