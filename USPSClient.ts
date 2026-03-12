@@ -110,6 +110,13 @@ export default class USPSClient {
   }
 
   async getRates(request: RateRequestData) {
+    if (!this.config.originZipCode || typeof this.config.originZipCode !== 'string') {
+      throw new Error('USPS Client is not configured with an originZipCode.');
+    }
+    if (!request.destinationZipCode || typeof request.destinationZipCode !== 'string') {
+      throw new Error('destinationZipCode is a required field for rate calculation.');
+    }
+
     const accessToken = await this.getAccessToken();
     const isProduction = this.config.env === 'production';
     const uspsApiBaseUrl = isProduction ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
