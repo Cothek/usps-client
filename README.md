@@ -74,7 +74,7 @@ This defines the `fromAddress` used in shipping labels.
 The library is a pure ESM module. The `USPSClient` is the default export, while helper functions are available as named exports.
 
 ```typescript
-import USPSClient, { getUspsAccessToken } from 'usps-client';
+import USPSClient from 'usps-client';
 
 const uspsClient = new USPSClient({
   consumerKey: process.env.USPS_CONSUMER_KEY,
@@ -92,13 +92,22 @@ All methods are asynchronous and return promises.
 
 ```typescript
 try {
-  const { validated, original } = await uspsClient.validateAddress({
+  const { validated } = await uspsClient.validateAddress({
     streetAddress: '1600 Amphitheatre Pkwy',
     city: 'Mountain View',
     state: 'CA',
     zipCode: '94043',
   });
+
+  // The 'validated' object contains the standardized address with 'zip5' and 'zip4' fields.
   console.log('Validated Address:', validated);
+  // Example: {
+  //   streetAddress: '1600 AMPHITHEATRE PKWY',
+  //   city: 'MOUNTAIN VIEW',
+  //   state: 'CA',
+  //   zip5: '94043',
+  //   zip4: '1351'
+  // }
 } catch (error) {
   console.error('Address validation failed:', error);
 }

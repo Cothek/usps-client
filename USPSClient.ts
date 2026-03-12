@@ -96,8 +96,8 @@ export default class USPSClient {
         secondaryAddress: addr.secondaryAddress,
         city: addr.city,
         state: addr.state,
-        zipCode: addr.ZIPCode,
-        zipCodePlus4: addr.ZIPPlus4,
+        zip5: addr.ZIPCode,
+        zip4: addr.ZIPPlus4,
       };
       return {
         validated,

@@ -22,8 +22,8 @@ export interface ValidatedAddress {
   secondaryAddress?: string;
   city: string;
   state: string;
-  zipCode: string;
-  zipCodePlus4?: string;
+  zip5: string;
+  zip4?: string;
 }
 
 export interface RateRequestData {
