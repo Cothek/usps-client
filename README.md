@@ -18,13 +18,13 @@ Add the library to your project via `npm` or your preferred package manager.
 
 ### Install from GitHub
 
-For cloud environments or teams, installing directly from the GitHub repository is recommended.
+To ensure a reliable installation over HTTPS, especially in CI/CD environments like Vercel, use the `github:` prefix.
 
 ```bash
-npm install Cothek/usps-client
+npm install github:Cothek/usps-client
 ```
 
-If you encounter an `ssh: command not found` error during installation, your environment may be defaulting to SSH. Force Git to use HTTPS with this command:
+If you encounter an `ssh: command not found` or `Permission denied (publickey)` error, your environment may be defaulting to SSH. The command above is the recommended fix. As a fallback for a local machine, you can force Git to use HTTPS for all GitHub connections:
 
 ```bash
 git config --global url."https://github.com/".insteadOf ssh://git@github.com/
@@ -132,12 +132,38 @@ try {
 
 #### Create a Shipping Label
 
+Creating a shipping label involves gathering your account details, defining the sender and recipient addresses, and describing the package. The `createLabel` method simplifies this by rolling it into a single API call.
+
+Here’s a step-by-step guide:
+
+1.  **Gather Your Credentials**: Ensure you have your USPS Mailer ID (`mid`), Customer Registration ID (`crid`), and Enterprise Payment System account number (`epsAccountNumber`). These are required for payment authorization and are typically stored as environment variables.
+
+2.  **Define the `fromAddress`**: This object represents the sender's address. It should match the address associated with your USPS account.
+
+3.  **Define the `toAddress`**: This object represents the recipient's address. For best results, it's recommended to validate this address using the `validateAddress` method before creating a label.
+
+4.  **Specify `packageDetails`**: This object is crucial for a successful label request. You must accurately describe the package's contents, dimensions, weight, and the desired mail service.
+    *   `mailClass`: Specifies the USPS service (e.g., `'PM'` for Priority Mail, `'FCM'` for First-Class Mail).
+    *   `weight`: The package weight in pounds.
+    *   `length`, `width`, `height`: The package dimensions in inches.
+    *   `mailingDate`: The date the package will be shipped, in `YYYY-MM-DD` format.
+    *   `contentType`: A general description of the contents (e.g., `'MERCHANDISE'`).
+
+5.  **Call `createLabel`**: Pass the complete `LabelConfig` object to the `createLabel` method.
+
+6.  **Process the Response**: If successful, the method returns an object containing the `trackingNumber` and the Base64-encoded PDF `labelUrl`. You can then save this PDF or display it to the user.
+
+Here is a complete example bringing all the steps together:
+
 ```typescript
 try {
   const label = await uspsClient.createLabel({
+    // Step 1: Credentials
     mid: process.env.USPS_MID_NUMBER!,
     crid: process.env.USPS_CRID_NUMBER!,
     epsAccountNumber: process.env.USPS_EPS_ACCOUNT_NUMBER!,
+
+    // Step 2: From Address
     fromAddress: {
       name: process.env.USPS_FROM_NAME!,
       streetAddress: process.env.USPS_FROM_ADDRESS1!,
@@ -145,6 +171,8 @@ try {
       state: process.env.USPS_FROM_STATE!,
       zipCode: process.env.USPS_FROM_ZIP_CODE!,
     },
+
+    // Step 3: To Address
     toAddress: {
       name: 'Recipient Name',
       streetAddress: '123 Main St',
@@ -152,6 +180,8 @@ try {
       state: 'CA',
       zipCode: '90210',
     },
+
+    // Step 4: Package Details
     packageDetails: {
       contentType: 'MERCHANDISE',
       contentDescription: 'Sample items',
@@ -165,6 +195,7 @@ try {
     },
   });
 
+  // Step 6: Handle the response
   console.log('Label Created:');
   console.log('  - Tracking Number:', label.trackingNumber);
   console.log('  - Label URL (Base64):', label.labelUrl.substring(0, 50) + '...');
