@@ -1,11 +1,12 @@
 /**
  * @fileOverview Entry point for the standalone USPS client library.
- * Exports all functional modules and types for external consumption.
+ * Proxies to the source directory for consistency.
  */
 
-import USPSClient from './USPSClient.js';
+import USPSClient from './src/lib/usps/USPSClient.js';
 
 export default USPSClient;
 
-export * from './constants.js';
-export * from './types.js';
+export * from './src/lib/usps/constants.js';
+export * from './src/lib/usps/types.js';
+export * from './src/lib/usps/schemas.js';

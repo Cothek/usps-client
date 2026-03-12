@@ -24,7 +24,6 @@ export default class USPSClient {
 
   async getAccessToken(): Promise<string> {
     const { consumerKey, consumerSecret, env } = this.config;
-
     const uspsAuthBaseUrl = env === 'production' ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
     const uspsTokenEndpoint = `${uspsAuthBaseUrl}/oauth2/v3/token`;
 
@@ -40,15 +39,11 @@ export default class USPSClient {
 
     if (!tokenResponse.ok) {
       const errorData = await tokenResponse.json().catch(() => ({}));
-      throw new Error(`USPS OAuth Token Request Failed: ${tokenResponse.statusText}. ${errorData.error_description || ''}`);
+      throw new Error(`USPS OAuth Token Request Failed: ${tokenResponse.status}. ${errorData.error_description || ''}`);
     }
 
     const tokenData = await tokenResponse.json();
-    const accessToken = tokenData.access_token;
-    if (!accessToken) {
-      throw new Error('USPS OAuth token not found in response.');
-    }
-    return accessToken;
+    return tokenData.access_token;
   }
 
   async validateAddress(address: AddressForValidation) {
@@ -56,32 +51,25 @@ export default class USPSClient {
     const accessToken = await this.getAccessToken();
     const isProduction = this.config.env === 'production';
     const uspsApiBaseUrl = isProduction ? "https://apis.usps.com" : "https://apis-tem.usps.com";
-    const validationEndpoint = `${uspsApiBaseUrl}/addresses/v3/address`;
-
-    const queryParams: Record<string, string> = {
+    
+    const queryParams = new URLSearchParams({
       streetAddress: validatedInput.streetAddress,
       city: validatedInput.city,
       state: validatedInput.state,
       ZIPCode: validatedInput.zipCode.split('-')[0],
-    };
+    });
 
     if (validatedInput.secondaryAddress) {
-      queryParams.secondaryAddress = validatedInput.secondaryAddress;
+      queryParams.append('secondaryAddress', validatedInput.secondaryAddress);
     }
 
-    const queryString = new URLSearchParams(queryParams).toString();
-    const validationUrl = `${validationEndpoint}?${queryString}`;
-
-    const response = await fetch(validationUrl, {
+    const response = await fetch(`${uspsApiBaseUrl}/addresses/v3/address?${queryParams.toString()}`, {
       method: "GET",
       headers: { Authorization: `Bearer ${accessToken}` },
     });
 
     const responseData = await response.json();
-
-    if (!response.ok) {
-      throw new Error(responseData.error?.message || "Address validation failed.");
-    }
+    if (!response.ok) throw new Error(responseData.error?.message || "Address validation failed.");
 
     if (responseData.address) {
       const addr = responseData.address;
@@ -93,13 +81,8 @@ export default class USPSClient {
         zip5: addr.ZIPCode,
         zip4: addr.ZIPPlus4,
       };
-      return {
-        validated,
-        matches: responseData.matches,
-        additionalInfo: responseData.additionalInfo,
-      };
+      return { validated, matches: responseData.matches, additionalInfo: responseData.additionalInfo };
     }
-    
     throw new Error("Address not found.");
   }
 
@@ -108,12 +91,13 @@ export default class USPSClient {
     const accessToken = await this.getAccessToken();
     const isProduction = this.config.env === 'production';
     const uspsApiBaseUrl = isProduction ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
-    const apiUrl = `${uspsApiBaseUrl}/prices/v3/base-rates-list/search`;
+    
+    const totalWeight = validatedRequest.weightLbs + (validatedRequest.weightOz / 16);
 
     const requestBody = {
       originZIPCode: this.config.originZipCode.split('-')[0],
       destinationZIPCode: validatedRequest.destinationZipCode.split('-')[0],
-      weight: validatedRequest.weightLbs + (validatedRequest.weightOz / 16),
+      weight: parseFloat(totalWeight.toFixed(3)),
       unitOfMeasure: 'POUND',
       length: validatedRequest.lengthIn,
       width: validatedRequest.widthIn,
@@ -124,55 +108,42 @@ export default class USPSClient {
       destinationEntryFacilityType: 'NONE',
     };
 
-    const response = await fetch(apiUrl, {
+    const response = await fetch(`${uspsApiBaseUrl}/prices/v3/base-rates-list/search`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify(requestBody),
     });
 
     const responseData = await response.json();
-
     if (!response.ok) {
-      throw new Error(responseData?.error?.message || "Failed to fetch shipping rates.");
+      const msg = responseData?.error?.message || responseData?.message || "Failed to fetch rates.";
+      throw new Error(`USPS Rate Error: ${msg}`);
     }
 
     const uniqueRates = new Map<string, Rate>();
-
-    if (responseData.rateOptions && Array.isArray(responseData.rateOptions)) {
-      responseData.rateOptions.forEach((rateOption: any) => {
-        if (!rateOption.rates || !Array.isArray(rateOption.rates) || rateOption.rates.length === 0) return;
-        
-        const primaryRateInfo = rateOption.rates[0];
-        const serviceName = primaryRateInfo.description || primaryRateInfo.productName;
-
-        if (serviceName && primaryRateInfo.mailClass && rateOption.totalBasePrice > 0) {
-          const rate: Rate = {
-            serviceName,
-            mailClass: primaryRateInfo.mailClass,
-            price: rateOption.totalBasePrice,
-          };
-
-          const existingRate = uniqueRates.get(rate.serviceName);
-          if (!existingRate || existingRate.price > rate.price) {
-            uniqueRates.set(rate.serviceName, rate);
-          }
+    if (responseData.rateOptions) {
+      responseData.rateOptions.forEach((opt: any) => {
+        const primary = opt.rates?.[0];
+        if (primary && opt.totalBasePrice > 0) {
+          const serviceName = primary.description || primary.productName;
+          const rate: Rate = { serviceName, mailClass: primary.mailClass, price: opt.totalBasePrice };
+          const existing = uniqueRates.get(serviceName);
+          if (!existing || existing.price > rate.price) uniqueRates.set(serviceName, rate);
         }
       });
     }
 
     let parsedRates = Array.from(uniqueRates.values());
-    
-    if (validatedRequest.enabledServices && validatedRequest.enabledServices.length > 0) {
-      const enabledFilters = new Set(validatedRequest.enabledServices);
+    if (validatedRequest.enabledServices?.length) {
+      const filters = new Set(validatedRequest.enabledServices);
       parsedRates = parsedRates.filter(rate => {
-        const description = rate.serviceName.toLowerCase();
-        for (const filterId of enabledFilters) {
-          const filter = serviceFilterMap[filterId];
-          if (filter) {
-            const mailClassMatch = filter.mailClasses.includes(rate.mailClass);
-            const keywordMatch = filter.keywords.some(kw => description.includes(kw));
-            const exclusionMatch = filter.exclusions?.some(ex => description.includes(ex)) ?? false;
-            if (mailClassMatch && keywordMatch && !exclusionMatch) return true;
+        const desc = rate.serviceName.toLowerCase();
+        for (const fid of filters) {
+          const f = serviceFilterMap[fid];
+          if (f && f.mailClasses.includes(rate.mailClass)) {
+            const kw = f.keywords.some(k => desc.includes(k));
+            const ex = f.exclusions?.some(e => desc.includes(e)) ?? false;
+            if (kw && !ex) return true;
           }
         }
         return false;
@@ -188,33 +159,30 @@ export default class USPSClient {
     const isProduction = this.config.env === 'production';
     const uspsApiBaseUrl = isProduction ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
     
-    const paymentAuthEndpoint = `${uspsApiBaseUrl}/payments/v3/payment-authorization`;
-    const paymentAuthBody = {
-      paymentMethods: [{ accountNumber: validatedConfig.epsAccountNumber, paymentTypes: ['SHIPPING_LABEL'] }],
-      roles: [
-        { roleName: 'PAYER', CRID: validatedConfig.crid, MID: validatedConfig.mid, manifestMID: validatedConfig.mid, accountType: 'EPS', accountNumber: validatedConfig.epsAccountNumber },
-        { roleName: 'LABEL_OWNER', CRID: validatedConfig.crid, MID: validatedConfig.mid, manifestMID: validatedConfig.mid },
-      ],
-    };
-
-    const paymentResponse = await fetch(paymentAuthEndpoint, {
+    // Payment Authorization
+    const paymentResponse = await fetch(`${uspsApiBaseUrl}/payments/v3/payment-authorization`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-      body: JSON.stringify(paymentAuthBody),
+      body: JSON.stringify({
+        paymentMethods: [{ accountNumber: validatedConfig.epsAccountNumber, paymentTypes: ['SHIPPING_LABEL'] }],
+        roles: [
+          { roleName: 'PAYER', CRID: validatedConfig.crid, MID: validatedConfig.mid, manifestMID: validatedConfig.mid, accountType: 'EPS', accountNumber: validatedConfig.epsAccountNumber },
+          { roleName: 'LABEL_OWNER', CRID: validatedConfig.crid, MID: validatedConfig.mid, manifestMID: validatedConfig.mid },
+        ],
+      }),
     });
 
     if (!paymentResponse.ok) throw new Error("Payment authorization failed.");
-    const paymentData = await paymentResponse.json();
-    const paymentToken = paymentData.paymentAuthorizationToken;
+    const { paymentAuthorizationToken: paymentToken } = await paymentResponse.json();
 
-    const { zipCode: fromZip, ...fromAddressRest } = validatedConfig.fromAddress;
-    const { zipCode: toZip, ...toAddressRest } = validatedConfig.toAddress;
-    const labelEndpoint = `${uspsApiBaseUrl}/labels/v3/label`;
+    // Label Generation
+    const { zipCode: fromZip, ...fromRest } = validatedConfig.fromAddress;
+    const { zipCode: toZip, ...toRest } = validatedConfig.toAddress;
     
     const labelBody = {
       requester: { requesterId: validatedConfig.mid, mailingActivity: 'PERMIT_HOLDER_OR_END_USER' },
-      fromAddress: { ...fromAddressRest, ZIPCode: fromZip },
-      toAddress: { ...toAddressRest, ZIPCode: toZip },
+      fromAddress: { ...fromRest, ZIPCode: fromZip },
+      toAddress: { ...toRest, ZIPCode: toZip },
       packageDescription: {
         ...validatedConfig.packageDetails,
         unitOfMeasure: 'POUND',
@@ -224,7 +192,7 @@ export default class USPSClient {
       imageParameters: { imageFormat: 'PDF', labelLayout: 'LABEL_4X6' },
     };
 
-    const labelResponse = await fetch(labelEndpoint, {
+    const labelResponse = await fetch(`${uspsApiBaseUrl}/labels/v3/label`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -234,52 +202,34 @@ export default class USPSClient {
       body: JSON.stringify(labelBody),
     });
 
-    if (!labelResponse.ok) {
-      const errText = await labelResponse.text();
-      throw new Error(`Label API failed: ${errText}`);
-    }
-
-    const contentType = labelResponse.headers.get('Content-Type');
-    if (!contentType?.includes('multipart/form-data')) throw new Error("Unexpected response format from USPS.");
+    if (!labelResponse.ok) throw new Error(`Label API failed: ${await labelResponse.text()}`);
 
     const responseText = await labelResponse.text();
-    const boundaryMatch = contentType.match(/boundary=(.+)/);
-    if (!boundaryMatch) throw new Error("Multipart boundary not found.");
+    const boundary = `--${labelResponse.headers.get('Content-Type')?.match(/boundary=(.+)/)?.[1]}`;
+    if (!boundary) throw new Error("Multipart boundary not found.");
     
-    const boundary = `--${boundaryMatch[1]}`;
-    const parts = responseText.split(boundary).filter(p => p.trim() !== '' && p.trim() !== '--');
+    const parts = responseText.split(boundary);
+    let meta: any, imgStr: string | undefined;
 
-    let metadataPart: any;
-    let imagePartStr: string | undefined;
-
-    for (const part of parts) {
-      if (part.includes('name="labelMetadata"')) {
-        const body = part.substring(part.indexOf('\r\n\r\n') + 4).trim();
-        metadataPart = JSON.parse(body);
-      } else if (part.includes('filename="labelImage.pdf"')) {
-        imagePartStr = part.substring(part.indexOf('\r\n\r\n') + 4).trim().replace(/\s/g, '');
+    for (const p of parts) {
+      if (p.includes('name="labelMetadata"')) {
+        meta = JSON.parse(p.substring(p.indexOf('\r\n\r\n') + 4).trim());
+      } else if (p.includes('filename="labelImage.pdf"')) {
+        imgStr = p.substring(p.indexOf('\r\n\r\n') + 4).trim().replace(/\s/g, '');
       }
     }
 
-    if (!metadataPart || !imagePartStr) throw new Error("Missing metadata or image in response.");
+    if (!meta || !imgStr) throw new Error("Missing response data.");
 
-    const pdfBuffer = Buffer.from(imagePartStr, 'base64');
-    const pdfDoc = await PDFDocument.load(pdfBuffer);
+    const pdfDoc = await PDFDocument.load(Buffer.from(imgStr, 'base64'));
     const page = pdfDoc.getPage(0);
-    const labelWidth = 4 * 72;
-    const labelHeight = 6 * 72;
-    const pageHeight = page.getHeight();
-    const margin = 60;
+    const [lW, lH, margin] = [4 * 72, 6 * 72, 60];
+    page.setCropBox(margin, page.getHeight() - margin - 30 - lH, lW, lH);
     
-    page.setCropBox(margin, pageHeight - margin - 30 - labelHeight, labelWidth, labelHeight);
-    
-    const croppedBytes = await pdfDoc.save();
-    const base64 = Buffer.from(croppedBytes).toString('base64');
-
     return {
-      trackingNumber: metadataPart.trackingNumber,
-      labelUrl: `data:application/pdf;base64,${base64}`,
-      metadata: metadataPart,
+      trackingNumber: meta.trackingNumber,
+      labelUrl: `data:application/pdf;base64,${Buffer.from(await pdfDoc.save()).toString('base64')}`,
+      metadata: meta,
     };
   }
 }

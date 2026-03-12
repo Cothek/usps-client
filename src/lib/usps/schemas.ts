@@ -1,5 +1,12 @@
 import { z } from 'zod';
 
+/**
+ * Coerces inputs to numbers and ensures they are finite and positive.
+ * This prevents NaN issues which JSON.stringify converts to 'null'.
+ */
+const CoercedPositiveNumber = z.coerce.number().finite().positive();
+const CoercedNonNegativeNumber = z.coerce.number().finite().nonnegative();
+
 export const UspsClientConfigSchema = z.object({
   consumerKey: z.string().min(1, "Consumer Key is required"),
   consumerSecret: z.string().min(1, "Consumer Secret is required"),
@@ -9,38 +16,39 @@ export const UspsClientConfigSchema = z.object({
 
 export const AddressSchema = z.object({
   name: z.string().optional(),
-  streetAddress: z.string().min(1),
+  firm: z.string().optional(),
+  streetAddress: z.string().min(1, "Street address is required"),
   secondaryAddress: z.string().optional(),
-  city: z.string().min(1),
-  state: z.string().length(2),
-  zipCode: z.string().regex(/^\d{5}(-\d{4})?$/),
+  city: z.string().min(1, "City is required"),
+  state: z.string().length(2, "State must be a 2-letter code"),
+  zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code"),
 });
 
 export const RateRequestSchema = z.object({
-  destinationZipCode: z.string().regex(/^\d{5}(-\d{4})?$/),
-  weightLbs: z.number().nonnegative(),
-  weightOz: z.number().nonnegative().default(0),
-  lengthIn: z.number().positive(),
-  widthIn: z.number().positive(),
-  heightIn: z.number().positive(),
+  destinationZipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid destination ZIP code"),
+  weightLbs: CoercedNonNegativeNumber.default(0),
+  weightOz: CoercedNonNegativeNumber.default(0),
+  lengthIn: CoercedPositiveNumber,
+  widthIn: CoercedPositiveNumber,
+  heightIn: CoercedPositiveNumber,
   enabledServices: z.array(z.string()).optional(),
 });
 
 export const LabelConfigSchema = z.object({
-  mid: z.string(),
-  crid: z.string(),
-  epsAccountNumber: z.string(),
+  mid: z.string().min(1),
+  crid: z.string().min(1),
+  epsAccountNumber: z.string().min(1),
   fromAddress: AddressSchema,
   toAddress: AddressSchema,
   packageDetails: z.object({
-    contentType: z.string(),
-    contentDescription: z.string(),
-    mailClass: z.string(),
+    contentType: z.string().default('MERCHANDISE'),
+    contentDescription: z.string().min(1),
+    mailClass: z.string().min(1),
     processingCategory: z.string().default('MACHINABLE'),
-    weight: z.number().positive(),
-    length: z.number().positive(),
-    width: z.number().positive(),
-    height: z.number().positive(),
+    weight: CoercedPositiveNumber,
+    length: CoercedPositiveNumber,
+    width: CoercedPositiveNumber,
+    height: CoercedPositiveNumber,
     mailingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   }),
 });
