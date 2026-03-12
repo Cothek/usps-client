@@ -58,6 +58,7 @@ export default class USPSClient {
       streetAddress: address.streetAddress,
       city: address.city,
       state: address.state,
+      // The USPS Address Validation API requires the parameter to be named 'ZIPCode'.
       ZIPCode: address.zipCode.split('-')[0],
     };
 
@@ -114,6 +115,7 @@ export default class USPSClient {
     const uspsApiBaseUrl = isProduction ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
     const apiUrl = `${uspsApiBaseUrl}/prices/v3/base-rates-list/search`;
 
+    // Note: The USPS Rates API requires specific ZIP code formats.
     const requestBody = {
       originZIPCode: this.config.originZipCode.split('-')[0],
       destinationZIPCode: request.destinationZipCode.split('-')[0],
@@ -215,6 +217,9 @@ export default class USPSClient {
     const { zipCode: fromZip, ...fromAddressRest } = config.fromAddress;
     const { zipCode: toZip, ...toAddressRest } = config.toAddress;
     const labelEndpoint = `${uspsApiBaseUrl}/labels/v3/label`;
+    
+    // Note: The USPS Label API requires address keys to be 'ZIPCode', not 'zipCode'.
+    // The following object construction maps our internal `zipCode` to the required external format.
     const labelBody = {
       requester: { requesterId: config.mid, mailingActivity: 'PERMIT_HOLDER_OR_END_USER' },
       fromAddress: { ...fromAddressRest, ZIPCode: fromZip },

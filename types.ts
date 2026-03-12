@@ -6,7 +6,7 @@ export interface UspsClientConfig {
   consumerKey: string;
   consumerSecret: string;
   env: 'production' | 'development';
-  originZip: string;
+  originZipCode: string;
 }
 
 export interface AddressForValidation {
@@ -22,12 +22,12 @@ export interface ValidatedAddress {
   secondaryAddress?: string;
   city: string;
   state: string;
-  zip5: string;
-  zip4?: string;
+  zipCode: string;
+  zipCodePlus4?: string;
 }
 
 export interface RateRequestData {
-  destinationZip: string;
+  destinationZipCode: string;
   weightLbs: number;
   weightOz: number;
   lengthIn: number;
@@ -53,7 +53,7 @@ export interface LabelConfig {
     secondaryAddress?: string;
     city: string;
     state: string;
-    ZIPCode: string;
+    zipCode: string;
     country: string;
     phone?: string;
   };
@@ -66,7 +66,7 @@ export interface LabelConfig {
     secondaryAddress?: string;
     city: string;
     state: string;
-    ZIPCode: string;
+    zipCode: string;
     country: string;
     email?: string;
   };
