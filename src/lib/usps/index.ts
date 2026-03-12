@@ -1,4 +1,8 @@
-export { default as USPSClient } from './USPSClient';
-export * from './types';
-export * from './constants';
-export * from './schemas';
+/**
+ * @fileOverview Entry point for the USPS client library.
+ */
+
+export { default as USPSClient } from './USPSClient.js';
+export * from './types.js';
+export * from './constants.js';
+export * from './schemas.js';
