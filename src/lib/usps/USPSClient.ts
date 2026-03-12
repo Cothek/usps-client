@@ -6,14 +6,14 @@ import {
   RateRequestData, 
   UspsClientConfig, 
   ValidatedAddress 
-} from './types';
-import { serviceFilterMap } from './constants';
+} from './types.js';
+import { serviceFilterMap } from './constants.js';
 import { 
   UspsClientConfigSchema, 
   AddressSchema, 
   RateRequestSchema, 
   LabelConfigSchema 
-} from './schemas';
+} from './schemas.js';
 
 export default class USPSClient {
   private config: UspsClientConfig;
@@ -125,7 +125,7 @@ export default class USPSClient {
       responseData.rateOptions.forEach((opt: any) => {
         const primary = opt.rates?.[0];
         if (primary && opt.totalBasePrice > 0) {
-          const serviceName = primary.description || primary.productName;
+          const serviceName = (primary.description || primary.productName) as string;
           const rate: Rate = { serviceName, mailClass: primary.mailClass, price: opt.totalBasePrice };
           const existing = uniqueRates.get(serviceName);
           if (!existing || existing.price > rate.price) uniqueRates.set(serviceName, rate);
@@ -141,8 +141,8 @@ export default class USPSClient {
         for (const fid of filters) {
           const f = serviceFilterMap[fid];
           if (f && f.mailClasses.includes(rate.mailClass)) {
-            const kw = f.keywords.some(k => desc.includes(k));
-            const ex = f.exclusions?.some(e => desc.includes(e)) ?? false;
+            const kw = f.keywords.some((k: string) => desc.includes(k));
+            const ex = f.exclusions?.some((e: string) => desc.includes(e)) ?? false;
             if (kw && !ex) return true;
           }
         }

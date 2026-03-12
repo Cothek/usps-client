@@ -1,6 +1,5 @@
 /**
  * @fileOverview Entry point for the standalone USPS client library.
- * Proxies to the source directory for consistency.
  */
 
 import USPSClient from './src/lib/usps/USPSClient.js';

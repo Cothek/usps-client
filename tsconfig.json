@@ -11,6 +11,12 @@
     "declaration": true,
     "rootDir": "."
   },
-  "include": ["index.ts", "usps-client.ts", "schemas.ts", "types.ts"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "index.ts",
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
