@@ -47,7 +47,7 @@ All configuration is handled via environment variables. Create a `.env` file in 
 - `USPS_CONSUMER_KEY`: Your USPS API Consumer Key.
 - `USPS_CONSUMER_SECRET`: Your USPS API Consumer Secret.
 - `USPS_ENV`: The environment to target. Set to `production` for live requests or `development` for the Test Environment (TEM).
-- `USPS_ORIGIN_ZIP`: The 5-digit ZIP code of your package's origin, used for rate calculations.
+- `USPS_ORIGIN_ZIP_CODE`: The 5-digit ZIP code of your package's origin, used for rate calculations.
 
 ### Label Generation Details
 
@@ -65,7 +65,7 @@ This defines the `fromAddress` used in shipping labels.
 - `USPS_FROM_ADDRESS1`: The sender's street address.
 - `USPS_FROM_CITY`: The sender's city.
 - `USPS_FROM_STATE`: The sender's two-letter state code.
-- `USPS_FROM_ZIP5`: The sender's 5-digit ZIP code.
+- `USPS_FROM_ZIP_CODE`: The sender's 5-digit ZIP code.
 
 ## Usage
 
@@ -80,7 +80,7 @@ const uspsClient = new USPSClient({
   consumerKey: process.env.USPS_CONSUMER_KEY,
   consumerSecret: process.env.USPS_CONSUMER_SECRET,
   env: process.env.USPS_ENV === 'production' ? 'production' : 'development',
-  originZip: process.env.USPS_ORIGIN_ZIP,
+  originZipCode: process.env.USPS_ORIGIN_ZIP_CODE,
 });
 ```
 
@@ -109,7 +109,7 @@ try {
 ```typescript
 try {
   const rates = await uspsClient.getRates({
-    destinationZip: '90210',
+    destinationZipCode: '90210',
     weightLbs: 1.5, // Can be a float
     lengthIn: 10,
     widthIn: 8,
@@ -134,14 +134,14 @@ try {
       streetAddress: process.env.USPS_FROM_ADDRESS1!,
       city: process.env.USPS_FROM_CITY!,
       state: process.env.USPS_FROM_STATE!,
-      ZIPCode: process.env.USPS_FROM_ZIP5!,
+      zipCode: process.env.USPS_FROM_ZIP_CODE!,
     },
     toAddress: {
       name: 'Recipient Name',
       streetAddress: '123 Main St',
       city: 'Anytown',
       state: 'CA',
-      ZIPCode: '90210',
+      zipCode: '90210',
     },
     packageDetails: {
       contentType: 'MERCHANDISE',

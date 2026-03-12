@@ -95,8 +95,8 @@ export default class USPSClient {
         secondaryAddress: addr.secondaryAddress,
         city: addr.city,
         state: addr.state,
-        zip5: addr.ZIPCode,
-        zip4: addr.ZIPPlus4,
+        zipCode: addr.ZIPCode,
+        zipCodePlus4: addr.ZIPPlus4,
       };
       return {
         validated,
@@ -115,8 +115,8 @@ export default class USPSClient {
     const apiUrl = `${uspsApiBaseUrl}/prices/v3/base-rates-list/search`;
 
     const requestBody = {
-      originZIPCode: this.config.originZip.split('-')[0],
-      destinationZIPCode: request.destinationZip.split('-')[0],
+      originZIPCode: this.config.originZipCode.split('-')[0],
+      destinationZIPCode: request.destinationZipCode.split('-')[0],
       weight: Number(request.weightLbs) + (Number(request.weightOz) / 16),
       unitOfMeasure: 'POUND',
       length: request.lengthIn,
@@ -212,11 +212,13 @@ export default class USPSClient {
     const paymentToken = paymentData.paymentAuthorizationToken;
 
     // 2. Create Label
+    const { zipCode: fromZip, ...fromAddressRest } = config.fromAddress;
+    const { zipCode: toZip, ...toAddressRest } = config.toAddress;
     const labelEndpoint = `${uspsApiBaseUrl}/labels/v3/label`;
     const labelBody = {
       requester: { requesterId: config.mid, mailingActivity: 'PERMIT_HOLDER_OR_END_USER' },
-      fromAddress: config.fromAddress,
-      toAddress: config.toAddress,
+      fromAddress: { ...fromAddressRest, ZIPCode: fromZip },
+      toAddress: { ...toAddressRest, ZIPCode: toZip },
       packageDescription: config.packageDetails,
       imageParameters: { imageFormat: 'PDF', labelLayout: 'LABEL_4X6' },
     };
