@@ -10,7 +10,7 @@ This library is hardened with **Zod validation and coercion**, ensuring that inp
 - **Address Validation**: Standardizes and validates addresses using USPS DPV (Delivery Point Validation).
 - **Hardened Rate Calculation**: Automatically coerces string inputs (like "5.5" lbs) to numbers, preventing `NaN` and `null` serialization errors in the USPS API.
 - **Label Generation**: Creates 4x6 shipping labels in PDF format with automatic cropping for print-readiness.
-- **Type Safety**: Built with TypeScript and Zod for runtime and compile-time confidence.
+- **ESM Ready**: Fully compliant with modern NodeNext/ESM module resolution.
 
 ## Installation
 
@@ -29,7 +29,7 @@ npm install pdf-lib zod
 Initialize the `USPSClient` with your credentials. The library will validate these settings immediately upon construction.
 
 ```typescript
-import { USPSClient } from './src/lib/usps';
+import USPSClient from 'usps-client';
 
 const uspsClient = new USPSClient({
   consumerKey: process.env.USPS_CONSUMER_KEY!,
@@ -76,7 +76,7 @@ try {
   });
   console.log('Available Rates:', rates);
 } catch (error) {
-  // Catching OAS Validation errors (like weight: null) before they reach the API
+  // Catches validation errors locally before they reach the USPS server
   console.error('Rate Error:', error.message);
 }
 ```
@@ -112,7 +112,7 @@ try {
       length: 12,
       width: 9,
       height: 6,
-      mailingDate: '2023-12-01',
+      mailingDate: '2025-01-01',
     },
   });
 
@@ -125,14 +125,7 @@ try {
 
 ## Troubleshooting: OAS Validation Errors
 
-If you receive an error like `Instance type (null) does not match any allowed primitive type` for `weight`, it means a non-numeric value was passed. This library uses `z.coerce.number()` to minimize these occurrences, but ensures that if a value *cannot* be coerced, a clear Zod error is thrown locally rather than a cryptic "OpenAPI Spec" error from the USPS server.
-
-## Testing with the TEM
-
-The USPS Test Environment (TEM) must be manually activated for your account.
-
-1.  Email `webtools@usps.gov` to activate your MID/CRID for the TEM.
-2.  Set `USPS_ENV=development`.
+If you previously received errors like `Instance type (null) does not match any allowed primitive type` for `weight`, it was because non-numeric values (like strings or `NaN`) were being serialized. This library now uses `z.coerce.number()` and `finite()` checks to ensure only valid numeric types are sent to the API.
 
 ## License
 
