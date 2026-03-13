@@ -46,13 +46,15 @@ export const LabelConfigSchema = z.object({
   toAddress: AddressSchema,
   packageDetails: z.object({
     contentType: z.string().default('MERCHANDISE'),
-    contentDescription: z.string().min(1),
-    mailClass: z.string().min(1),
+    contentDescription: z.string().default('Shipping Package'),
+    mailClass: z.string().min(1, "Mail class is required (e.g., 'PM' for Priority Mail)"),
     processingCategory: z.string().default('MACHINABLE'),
     weight: CoercedPositiveNumber,
     length: CoercedPositiveNumber,
     width: CoercedPositiveNumber,
     height: CoercedPositiveNumber,
-    mailingDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    mailingDate: z.string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Mailing date must be YYYY-MM-DD")
+      .default(() => new Date().toISOString().split('T')[0]),
   }),
 });
