@@ -167,6 +167,11 @@ export default class USPSClient {
     const isProduction = this.config.env === 'production';
     const uspsApiBaseUrl = isProduction ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
     
+    // Use instance credentials if not provided in config
+    const mid = validatedConfig.mid || this.config.mid;
+    const crid = validatedConfig.crid || this.config.crid;
+    const epsAccountNumber = validatedConfig.epsAccountNumber || this.config.epsAccountNumber;
+
     // Payment Authorization
     const paymentAuthUrl = `${uspsApiBaseUrl}/payments/v3/payment-authorization`;
     console.log(`[USPS] Requesting payment authorization from: ${paymentAuthUrl}`);
@@ -175,15 +180,18 @@ export default class USPSClient {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({
-        paymentMethods: [{ accountNumber: validatedConfig.epsAccountNumber, paymentTypes: ['SHIPPING_LABEL'] }],
+        paymentMethods: [{ accountNumber: epsAccountNumber, paymentTypes: ['SHIPPING_LABEL'] }],
         roles: [
-          { roleName: 'PAYER', CRID: validatedConfig.crid, MID: validatedConfig.mid, manifestMID: validatedConfig.mid, accountType: 'EPS', accountNumber: validatedConfig.epsAccountNumber },
-          { roleName: 'LABEL_OWNER', CRID: validatedConfig.crid, MID: validatedConfig.mid, manifestMID: validatedConfig.mid },
+          { roleName: 'PAYER', CRID: crid, MID: mid, manifestMID: mid, accountType: 'EPS', accountNumber: epsAccountNumber },
+          { roleName: 'LABEL_OWNER', CRID: crid, MID: mid, manifestMID: mid },
         ],
       }),
     });
 
-    if (!paymentResponse.ok) throw new Error("Payment authorization failed.");
+    if (!paymentResponse.ok) {
+        const err = await paymentResponse.json().catch(() => ({}));
+        throw new Error(`Payment authorization failed: ${err.error?.message || paymentResponse.statusText}`);
+    }
     const { paymentAuthorizationToken: paymentToken } = await paymentResponse.json();
 
     // Label Generation
@@ -191,7 +199,7 @@ export default class USPSClient {
     const { zipCode: toZip, ...toRest } = validatedConfig.toAddress;
     
     const labelBody = {
-      requester: { requesterId: validatedConfig.mid, mailingActivity: 'PERMIT_HOLDER_OR_END_USER' },
+      requester: { requesterId: mid, mailingActivity: 'PERMIT_HOLDER_OR_END_USER' },
       fromAddress: { ...fromRest, ZIPCode: fromZip },
       toAddress: { ...toRest, ZIPCode: toZip },
       packageDescription: {
@@ -219,7 +227,8 @@ export default class USPSClient {
     if (!labelResponse.ok) throw new Error(`Label API failed: ${await labelResponse.text()}`);
 
     const responseText = await labelResponse.text();
-    const boundary = `--${labelResponse.headers.get('Content-Type')?.match(/boundary=(.+)/)?.[1]}`;
+    const boundaryMatch = labelResponse.headers.get('Content-Type')?.match(/boundary=(.+)/);
+    const boundary = boundaryMatch ? `--${boundaryMatch[1]}` : null;
     if (!boundary) throw new Error("Multipart boundary not found.");
     
     const parts = responseText.split(boundary);
@@ -227,16 +236,19 @@ export default class USPSClient {
 
     for (const p of parts) {
       if (p.includes('name="labelMetadata"')) {
-        meta = JSON.parse(p.substring(p.indexOf('\r\n\r\n') + 4).trim());
+        const contentStart = p.indexOf('\r\n\r\n') + 4;
+        meta = JSON.parse(p.substring(contentStart).trim());
       } else if (p.includes('filename="labelImage.pdf"')) {
-        imgStr = p.substring(p.indexOf('\r\n\r\n') + 4).trim().replace(/\s/g, '');
+        const contentStart = p.indexOf('\r\n\r\n') + 4;
+        imgStr = p.substring(contentStart).trim().replace(/\s/g, '');
       }
     }
 
-    if (!meta || !imgStr) throw new Error("Missing response data.");
+    if (!meta || !imgStr) throw new Error("Missing response data from USPS multipart response.");
 
     const pdfDoc = await PDFDocument.load(Buffer.from(imgStr, 'base64'));
     const page = pdfDoc.getPage(0);
+    // Typical USPS PDF formatting requires some cropping to isolate the 4x6 label
     const [lW, lH, margin] = [4 * 72, 6 * 72, 60];
     page.setCropBox(margin, page.getHeight() - margin - 30 - lH, lW, lH);
     

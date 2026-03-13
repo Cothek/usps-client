@@ -6,19 +6,15 @@ This library is hardened with **Zod validation and coercion**, ensuring that inp
 
 ## Core Features
 
-- **Automated OAuth2**: Transparently handles the entire OAuth2 token lifecycle for Production and TEM environments.
-- **Address Validation**: Standardizes and validates addresses using USPS DPV (Delivery Point Validation).
-- **Hardened Rate Calculation**: Automatically coerces string inputs (like "5.5" lbs) to numbers, preventing `NaN` and `null` serialization errors in the USPS API.
-- **Label Generation**: Creates 4x6 shipping labels in PDF format with automatic cropping for print-readiness.
+- **Automated OAuth2**: Transparently handles the entire OAuth2 token lifecycle.
+- **Address Validation**: Standardizes and validates addresses using USPS DPV.
+- **Hardened Rate Calculation**: Automatically coerces string inputs to numbers, preventing `NaN` serialization errors.
+- **Ergonomic Label Generation**: Store credentials once in the constructor; generate labels with simple address and package objects.
 - **ESM Ready**: Fully compliant with modern NodeNext/ESM module resolution.
 
 ## Installation
 
-Add the library to your project.
-
-### Peer Dependencies
-
-Ensure your project has the required peer dependencies installed:
+Add the library to your project. Ensure your project has the required peer dependencies:
 
 ```bash
 npm install pdf-lib zod
@@ -26,7 +22,7 @@ npm install pdf-lib zod
 
 ## Configuration
 
-Initialize the `USPSClient` with your credentials. The library will validate these settings immediately upon construction.
+Initialize the `USPSClient` with your account credentials. The library will validate these settings immediately.
 
 ```typescript
 import USPSClient from 'usps-client';
@@ -36,61 +32,22 @@ const uspsClient = new USPSClient({
   consumerSecret: process.env.USPS_CONSUMER_SECRET!,
   env: process.env.USPS_ENV === 'production' ? 'production' : 'development',
   originZipCode: process.env.USPS_ORIGIN_ZIP_CODE!,
+  // Account level credentials (set once)
+  mid: process.env.USPS_MID!,
+  crid: process.env.USPS_CRID!,
+  epsAccountNumber: process.env.USPS_EPS_ACCOUNT!,
 });
 ```
 
 ## Usage
 
-### 1. Validate an Address
+### 1. Create a Shipping Label
 
-Standardize user input into a USPS-recognized format.
-
-```typescript
-try {
-  const { validated } = await uspsClient.validateAddress({
-    streetAddress: '1600 Amphitheatre Pkwy',
-    city: 'Mountain View',
-    state: 'CA',
-    zipCode: '94043',
-  });
-
-  console.log('Validated Address:', validated);
-} catch (error) {
-  console.error('Validation Error:', error.message);
-}
-```
-
-### 2. Get Shipping Rates (Hardened)
-
-The library uses Zod coercion. You can pass values directly from a `FormData` object or a string-based state, and the library will handle the conversion.
-
-```typescript
-try {
-  const rates = await uspsClient.getRates({
-    destinationZipCode: '90210',
-    weightLbs: "1.5", // Coerced to 1.5 (number)
-    weightOz: 0,
-    lengthIn: "10",  // Coerced to 10 (number)
-    widthIn: "8",
-    heightIn: "4",
-  });
-  console.log('Available Rates:', rates);
-} catch (error) {
-  // Catches validation errors locally before they reach the USPS server
-  console.error('Rate Error:', error.message);
-}
-```
-
-### 3. Create a Shipping Label
-
-Generates a print-ready 4x6 label.
+Generates a print-ready 4x6 label. Credentials from the constructor are automatically used.
 
 ```typescript
 try {
   const label = await uspsClient.createLabel({
-    mid: process.env.USPS_MID!,
-    crid: process.env.USPS_CRID!,
-    epsAccountNumber: process.env.USPS_EPS_ACCOUNT!,
     fromAddress: {
       name: 'John Doe',
       streetAddress: '123 Main St',
@@ -108,7 +65,7 @@ try {
     packageDetails: {
       contentDescription: 'Books',
       mailClass: 'PM', // Priority Mail
-      weight: 2.0,
+      weight: "2.0",  // Coerced from string
       length: 12,
       width: 9,
       height: 6,
@@ -123,9 +80,20 @@ try {
 }
 ```
 
-## Troubleshooting: OAS Validation Errors
+### 2. Get Shipping Rates (Hardened)
 
-If you previously received errors like `Instance type (null) does not match any allowed primitive type` for `weight`, it was because non-numeric values (like strings or `NaN`) were being serialized. This library now uses `z.coerce.number()` and `finite()` checks to ensure only valid numeric types are sent to the API.
+The library handles conversion from string inputs (like those from `FormData`) automatically.
+
+```typescript
+const rates = await uspsClient.getRates({
+  destinationZipCode: '90210',
+  weightLbs: "1.5", 
+  weightOz: 0,
+  lengthIn: "10",
+  widthIn: "8",
+  heightIn: "4",
+});
+```
 
 ## License
 

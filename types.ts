@@ -7,9 +7,14 @@ export interface UspsClientConfig {
   consumerSecret: string;
   env: 'production' | 'development';
   originZipCode: string;
+  mid: string;
+  crid: string;
+  epsAccountNumber: string;
 }
 
 export interface AddressForValidation {
+  name?: string;
+  firm?: string;
   streetAddress: string;
   secondaryAddress?: string;
   city: string;
@@ -43,45 +48,20 @@ export interface Rate {
 }
 
 export interface LabelConfig {
-  mid: string;
-  crid: string;
-  epsAccountNumber: string;
-  fromAddress: {
-    name: string;
-    firm?: string;
-    streetAddress: string;
-    secondaryAddress?: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-    phone?: string;
-  };
-  toAddress: {
-    name: string;
-    firm?: string;
-    firstName?: string;
-    lastName?: string;
-    streetAddress: string;
-    secondaryAddress?: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-    email?: string;
-  };
+  mid?: string;
+  crid?: string;
+  epsAccountNumber?: string;
+  fromAddress: AddressForValidation;
+  toAddress: AddressForValidation;
   packageDetails: {
     contentType: string;
     contentDescription: string;
-    destinationEntryFacilityType: string;
     mailClass: string;
-    processingCategory: string;
+    processingCategory?: string;
     weight: number;
     length: number;
     width: number;
     height: number;
-    unitOfMeasure: string;
     mailingDate: string;
-    rateIndicator: string;
   };
 }

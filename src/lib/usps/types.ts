@@ -7,10 +7,14 @@ export interface UspsClientConfig {
   consumerSecret: string;
   env: 'production' | 'development';
   originZipCode: string;
+  mid: string;
+  crid: string;
+  epsAccountNumber: string;
 }
 
 export interface AddressForValidation {
   name?: string;
+  firm?: string;
   streetAddress: string;
   secondaryAddress?: string;
   city: string;
@@ -44,9 +48,9 @@ export interface Rate {
 }
 
 export interface LabelConfig {
-  mid: string;
-  crid: string;
-  epsAccountNumber: string;
+  mid?: string;
+  crid?: string;
+  epsAccountNumber?: string;
   fromAddress: AddressForValidation;
   toAddress: AddressForValidation;
   packageDetails: {
