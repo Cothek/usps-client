@@ -12,10 +12,10 @@ export const UspsClientConfigSchema = z.object({
   consumerSecret: z.string().min(1, "Consumer Secret is required"),
   env: z.enum(['production', 'development']),
   originZipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
-  // Account level credentials moved here for better ergonomics
-  mid: z.string().min(1, "MID is required"),
-  crid: z.string().min(1, "CRID is required"),
-  epsAccountNumber: z.string().min(1, "EPS Account Number is required"),
+  // Account level credentials are now optional at the client level
+  mid: z.string().optional(),
+  crid: z.string().optional(),
+  epsAccountNumber: z.string().optional(),
 });
 
 export const AddressSchema = z.object({
@@ -39,7 +39,6 @@ export const RateRequestSchema = z.object({
 });
 
 export const LabelConfigSchema = z.object({
-  // Credentials are now optional here as they default to the constructor values
   mid: z.string().optional(),
   crid: z.string().optional(),
   epsAccountNumber: z.string().optional(),

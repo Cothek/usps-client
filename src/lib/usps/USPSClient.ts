@@ -167,10 +167,14 @@ export default class USPSClient {
     const isProduction = this.config.env === 'production';
     const uspsApiBaseUrl = isProduction ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
     
-    // Use instance credentials if not provided in config
+    // Use instance credentials or config, but verify they exist here
     const mid = validatedConfig.mid || this.config.mid;
     const crid = validatedConfig.crid || this.config.crid;
     const epsAccountNumber = validatedConfig.epsAccountNumber || this.config.epsAccountNumber;
+
+    if (!mid || !crid || !epsAccountNumber) {
+      throw new Error("Missing required USPS account credentials (MID, CRID, or EPS Account Number) for label generation. Please provide them in the constructor or the createLabel configuration.");
+    }
 
     // Payment Authorization
     const paymentAuthUrl = `${uspsApiBaseUrl}/payments/v3/payment-authorization`;
@@ -248,7 +252,6 @@ export default class USPSClient {
 
     const pdfDoc = await PDFDocument.load(Buffer.from(imgStr, 'base64'));
     const page = pdfDoc.getPage(0);
-    // Typical USPS PDF formatting requires some cropping to isolate the 4x6 label
     const [lW, lH, margin] = [4 * 72, 6 * 72, 60];
     page.setCropBox(margin, page.getHeight() - margin - 30 - lH, lW, lH);
     

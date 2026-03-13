@@ -7,9 +7,9 @@ export interface UspsClientConfig {
   consumerSecret: string;
   env: 'production' | 'development';
   originZipCode: string;
-  mid: string;
-  crid: string;
-  epsAccountNumber: string;
+  mid?: string;
+  crid?: string;
+  epsAccountNumber?: string;
 }
 
 export interface AddressForValidation {
@@ -54,7 +54,7 @@ export interface LabelConfig {
   fromAddress: AddressForValidation;
   toAddress: AddressForValidation;
   packageDetails: {
-    contentType: string;
+    contentType?: string;
     contentDescription: string;
     mailClass: string;
     processingCategory?: string;
