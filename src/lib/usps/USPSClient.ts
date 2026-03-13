@@ -200,8 +200,13 @@ export default class USPSClient {
     const { paymentAuthorizationToken: paymentToken } = await paymentResponse.json();
 
     const formatAddress = (addr: any) => {
+      const [zip5, zip4] = addr.zipCode.split('-');
       const { zipCode, ...rest } = addr;
-      return { ...rest, ZIPCode: zipCode };
+      return { 
+        ...rest, 
+        ZIPCode: zip5,
+        ...(zip4 ? { ZIPPlus4: zip4 } : {})
+      };
     };
     
     const labelBody = {

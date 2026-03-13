@@ -7,6 +7,31 @@ import { z } from 'zod';
 const CoercedPositiveNumber = z.coerce.number().finite().positive();
 const CoercedNonNegativeNumber = z.coerce.number().finite().nonnegative();
 
+/**
+ * Valid USPS Processing Categories
+ */
+const ProcessingCategoryEnum = z.enum([
+  'LETTERS', 
+  'FLATS', 
+  'MACHINABLE', 
+  'NON_MACHINABLE', 
+  'IRREGULAR'
+]);
+
+/**
+ * Valid USPS Content Types
+ */
+const ContentTypeEnum = z.enum([
+  'HAZMAT', 
+  'CREMATED_REMAINS', 
+  'LIVES', 
+  'PERISHABLE', 
+  'PHARMACEUTICALS', 
+  'MEDICAL_SUPPLIES', 
+  'FRAGILE', 
+  'MERCHANDISE'
+]);
+
 export const UspsClientConfigSchema = z.object({
   consumerKey: z.string().min(1, "Consumer Key is required"),
   consumerSecret: z.string().min(1, "Consumer Secret is required"),
@@ -18,12 +43,12 @@ export const UspsClientConfigSchema = z.object({
 });
 
 export const AddressSchema = z.object({
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  firm: z.string().optional(),
-  streetAddress: z.string().min(1, "Street address is required"),
-  secondaryAddress: z.string().optional(),
-  city: z.string().min(1, "City is required"),
+  firstName: z.string().min(1, "First name is required if provided").optional(),
+  lastName: z.string().min(1, "Last name is required if provided").optional(),
+  firm: z.string().min(1, "Firm name is required if provided").optional(),
+  streetAddress: z.string().min(1, "Street address is required").max(48, "Street address too long"),
+  secondaryAddress: z.string().max(48, "Secondary address too long").optional(),
+  city: z.string().min(1, "City is required").max(28, "City too long"),
   state: z.string().length(2, "State must be a 2-letter code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code"),
 }).refine(data => {
@@ -48,10 +73,10 @@ export const LabelConfigSchema = z.object({
   fromAddress: AddressSchema,
   toAddress: AddressSchema,
   packageDetails: z.object({
-    contentType: z.string().min(1, "Content type is required (e.g., 'MERCHANDISE')"),
-    contentDescription: z.string().min(1, "Content description is required"),
+    contentType: ContentTypeEnum,
+    contentDescription: z.string().min(1, "Content description is required").max(50),
     mailClass: z.string().min(1, "Mail class is required (e.g., 'PM' for Priority Mail)"),
-    processingCategory: z.string().min(1, "Processing category is required (e.g., 'MACHINABLE')"),
+    processingCategory: ProcessingCategoryEnum,
     weight: CoercedPositiveNumber,
     length: CoercedPositiveNumber,
     width: CoercedPositiveNumber,
