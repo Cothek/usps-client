@@ -165,11 +165,6 @@ export default class USPSClient {
   }
 
   async createLabel(config: LabelConfig) {
-    const validatedConfig = LabelConfigSchema.parse(config);
-    const accessToken = await this.getAccessToken();
-    const isProduction = this.config.env === 'production';
-    const uspsApiBaseUrl = isProduction ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
-    
     const mid = this.config.mid;
     const crid = this.config.crid;
     const epsAccountNumber = this.config.epsAccountNumber;
@@ -178,6 +173,11 @@ export default class USPSClient {
       throw new Error("Missing required USPS account credentials (MID, CRID, or EPS Account Number) for label generation. Please provide them in the USPSClient constructor.");
     }
 
+    const validatedConfig = LabelConfigSchema.parse(config);
+    const accessToken = await this.getAccessToken();
+    const isProduction = this.config.env === 'production';
+    const uspsApiBaseUrl = isProduction ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
+    
     const paymentAuthUrl = `${uspsApiBaseUrl}/payments/v3/payment-authorization`;
     console.log(`[USPS] Requesting payment authorization from: ${paymentAuthUrl}`);
     
@@ -199,20 +199,34 @@ export default class USPSClient {
     }
     const { paymentAuthorizationToken: paymentToken } = await paymentResponse.json();
 
-    const formatAddress = (addr: any) => {
+    const mapAddress = (addr: any) => {
       const [zip5, zip4] = addr.zipCode.split('-');
-      const { zipCode, ...rest } = addr;
-      return { 
-        ...rest, 
+      const result: any = {
+        streetAddress: addr.streetAddress,
+        secondaryAddress: addr.secondaryAddress || '',
+        city: addr.city,
+        state: addr.state,
         ZIPCode: zip5,
-        ...(zip4 ? { ZIPPlus4: zip4 } : {})
       };
+      
+      if (addr.firstName && addr.lastName) {
+        result.firstName = addr.firstName;
+        result.lastName = addr.lastName;
+      } else if (addr.firm) {
+        result.firm = addr.firm;
+      }
+
+      if (zip4) {
+        result.ZIPPlus4 = zip4;
+      }
+      
+      return result;
     };
     
     const labelBody = {
       requester: { requesterId: mid, mailingActivity: 'PERMIT_HOLDER_OR_END_USER' },
-      fromAddress: formatAddress(validatedConfig.fromAddress),
-      toAddress: formatAddress(validatedConfig.toAddress),
+      fromAddress: mapAddress(validatedConfig.fromAddress),
+      toAddress: mapAddress(validatedConfig.toAddress),
       packageDescription: {
         ...validatedConfig.packageDetails,
         unitOfMeasure: 'POUND',
@@ -237,13 +251,20 @@ export default class USPSClient {
 
     if (!labelResponse.ok) {
       const errorText = await labelResponse.text();
+      console.error(`[USPS] Label API Failed. Status: ${labelResponse.status}`);
+      console.error(`[USPS] Request Body:`, JSON.stringify(labelBody, null, 2));
+      console.error(`[USPS] Response:`, errorText);
       throw new Error(`Label API failed: ${errorText}`);
     }
 
     const responseText = await labelResponse.text();
-    const boundaryMatch = labelResponse.headers.get('Content-Type')?.match(/boundary=(.+)/);
+    const contentTypeHeader = labelResponse.headers.get('Content-Type') || '';
+    const boundaryMatch = contentTypeHeader.match(/boundary=(.+)/);
     const boundary = boundaryMatch ? `--${boundaryMatch[1]}` : null;
-    if (!boundary) throw new Error("Multipart boundary not found.");
+    
+    if (!boundary) {
+      throw new Error(`Multipart boundary not found. Content-Type: ${contentTypeHeader}`);
+    }
     
     const parts = responseText.split(boundary);
     let meta: any, imgStr: string | undefined;
@@ -258,7 +279,9 @@ export default class USPSClient {
       }
     }
 
-    if (!meta || !imgStr) throw new Error("Missing response data from USPS multipart response.");
+    if (!meta || !imgStr) {
+      throw new Error("Missing response data from USPS multipart response (metadata or label image).");
+    }
 
     const pdfDoc = await PDFDocument.load(Buffer.from(imgStr, 'base64'));
     const page = pdfDoc.getPage(0);
