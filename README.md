@@ -28,7 +28,7 @@ Then install the client:
 npm install ../path-to-usps-client
 
 # If installing from a Git repository
-npm install git+https://github.com/your-username/usps-client.git
+npm install git+https://github.com/Cothek/usps-client.git
 ```
 
 ## Configuration
