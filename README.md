@@ -63,7 +63,7 @@ try {
 
 ### 2. Create a Shipping Label
 
-Generates a print-ready 4x6 label. Credentials provided in the constructor are used automatically.
+Generates a print-ready 4x6 label. Credentials provided in the constructor are used automatically. All package details required by the USPS API must be provided.
 
 ```typescript
 try {
@@ -83,8 +83,10 @@ try {
       zipCode: '90210',
     },
     packageDetails: {
+      contentType: 'MERCHANDISE',
       contentDescription: 'Books',
       mailClass: 'PM', // Priority Mail
+      processingCategory: 'MACHINABLE',
       weight: 2.5,
       length: 12,
       width: 9,
