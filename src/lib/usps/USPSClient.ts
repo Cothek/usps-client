@@ -27,6 +27,8 @@ export default class USPSClient {
     const uspsAuthBaseUrl = env === 'production' ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
     const uspsTokenEndpoint = `${uspsAuthBaseUrl}/oauth2/v3/token`;
 
+    console.log(`[USPS] Requesting OAuth token from: ${uspsTokenEndpoint}`);
+
     const tokenResponse = await fetch(uspsTokenEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -63,7 +65,10 @@ export default class USPSClient {
       queryParams.append('secondaryAddress', validatedInput.secondaryAddress);
     }
 
-    const response = await fetch(`${uspsApiBaseUrl}/addresses/v3/address?${queryParams.toString()}`, {
+    const url = `${uspsApiBaseUrl}/addresses/v3/address?${queryParams.toString()}`;
+    console.log(`[USPS] Validating address at: ${url}`);
+
+    const response = await fetch(url, {
       method: "GET",
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -108,7 +113,10 @@ export default class USPSClient {
       destinationEntryFacilityType: 'NONE',
     };
 
-    const response = await fetch(`${uspsApiBaseUrl}/prices/v3/base-rates-list/search`, {
+    const url = `${uspsApiBaseUrl}/prices/v3/base-rates-list/search`;
+    console.log(`[USPS] Fetching rates from: ${url}`);
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify(requestBody),
@@ -160,7 +168,10 @@ export default class USPSClient {
     const uspsApiBaseUrl = isProduction ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
     
     // Payment Authorization
-    const paymentResponse = await fetch(`${uspsApiBaseUrl}/payments/v3/payment-authorization`, {
+    const paymentAuthUrl = `${uspsApiBaseUrl}/payments/v3/payment-authorization`;
+    console.log(`[USPS] Requesting payment authorization from: ${paymentAuthUrl}`);
+    
+    const paymentResponse = await fetch(paymentAuthUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({
@@ -192,7 +203,10 @@ export default class USPSClient {
       imageParameters: { imageFormat: 'PDF', labelLayout: 'LABEL_4X6' },
     };
 
-    const labelResponse = await fetch(`${uspsApiBaseUrl}/labels/v3/label`, {
+    const labelUrl = `${uspsApiBaseUrl}/labels/v3/label`;
+    console.log(`[USPS] Generating label at: ${labelUrl}`);
+
+    const labelResponse = await fetch(labelUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
