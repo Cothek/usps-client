@@ -2,6 +2,23 @@
  * @fileOverview Type definitions for the USPS client library.
  */
 
+export type ContentType = 
+  | 'HAZMAT' 
+  | 'CREMATED_REMAINS' 
+  | 'LIVES' 
+  | 'PERISHABLE' 
+  | 'PHARMACEUTICALS' 
+  | 'MEDICAL_SUPPLIES' 
+  | 'FRAGILE' 
+  | 'MERCHANDISE';
+
+export type ProcessingCategory = 
+  | 'LETTERS' 
+  | 'FLATS' 
+  | 'MACHINABLE' 
+  | 'NON_MACHINABLE' 
+  | 'IRREGULAR';
+
 export interface UspsClientConfig {
   consumerKey: string;
   consumerSecret: string;
@@ -52,10 +69,10 @@ export interface LabelConfig {
   fromAddress: AddressForValidation;
   toAddress: AddressForValidation;
   packageDetails: {
-    contentType: string;
+    contentType: ContentType;
     contentDescription: string;
     mailClass: string;
-    processingCategory: string;
+    processingCategory: ProcessingCategory;
     weight: number;
     length: number;
     width: number;
