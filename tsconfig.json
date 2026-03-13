@@ -14,6 +14,8 @@
   "include": [
     "index.ts",
     "USPSClient.ts",
+    "constants.ts",
+    "types.ts",
     "src/**/*"
   ],
   "exclude": [
