@@ -1,5 +1,5 @@
 /**
- * @fileOverview Entry point for the USPS client library.
+ * @fileOverview Internal entry point for the USPS client library.
  */
 
 export { default as USPSClient } from './USPSClient.js';

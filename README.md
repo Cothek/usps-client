@@ -4,36 +4,21 @@ A modular, robust TypeScript library for interacting with the USPS v3 APIs (OAut
 
 This library is hardened with **Zod validation and coercion**, ensuring that inputs from web forms (which often arrive as strings) are safely transformed into the precise numeric types required by the USPS OpenAPI specifications.
 
-## Core Features
-
-- **Automated OAuth2**: Transparently handles the entire OAuth2 token lifecycle.
-- **Address Validation**: Standardizes and validates addresses using USPS DPV.
-- **Hardened Rate Calculation**: Automatically coerces string inputs to numbers, preventing `NaN` serialization errors common in web forms.
-- **Ergonomic Label Generation**: Store account credentials once in the constructor; generate labels with simplified address and package objects.
-- **ESM Ready**: Fully compliant with modern NodeNext/ESM module resolution (requires `.js` extensions).
-- **PDF Label Cropping**: Automatically crops 4x6 labels from USPS multipart responses using `pdf-lib`.
-
 ## Installation
 
-Add the library to your project. Since this library relies on specific peer dependencies for PDF manipulation and validation, ensure they are installed in your host project:
+This library is designed to be installed directly from GitHub. Ensure you have `pdf-lib` and `zod` installed in your project as they are required peer dependencies.
 
 ```bash
+# 1. Install peer dependencies
 npm install pdf-lib zod
-```
 
-Then install the client:
-
-```bash
-# If installing from a local directory
-npm install ../path-to-usps-client
-
-# If installing from a Git repository
-npm install git+https://github.com/Cothek/usps-client.git
+# 2. Install the client
+npm install github:Cothek/usps-client
 ```
 
 ## Configuration
 
-Initialize the `USPSClient` with your API credentials. Account-level credentials (`mid`, `crid`, `epsAccountNumber`) are optional at initialization—they are only required if you intend to generate shipping labels.
+Initialize the `USPSClient` with your API credentials. Account-level credentials (`mid`, `crid`, `epsAccountNumber`) are provided once at initialization. This allows you to use `getRates` or `validateAddress` without needing full shipping credentials.
 
 ```typescript
 import USPSClient from 'usps-client';
@@ -44,7 +29,7 @@ const uspsClient = new USPSClient({
   env: process.env.USPS_ENV === 'production' ? 'production' : 'development',
   originZipCode: process.env.USPS_ORIGIN_ZIP_CODE!,
   
-  // Optional: Only required for Label Generation
+  // Optional: Only required if you intend to generate shipping labels
   mid: process.env.USPS_MID,
   crid: process.env.USPS_CRID,
   epsAccountNumber: process.env.USPS_EPS_ACCOUNT,
@@ -78,7 +63,7 @@ try {
 
 ### 2. Create a Shipping Label
 
-Generates a print-ready 4x6 label. Credentials from the constructor are automatically used.
+Generates a print-ready 4x6 label. Credentials provided in the constructor are used automatically.
 
 ```typescript
 try {
@@ -111,7 +96,6 @@ try {
   console.log('Tracking Number:', label.trackingNumber);
   // label.labelUrl is a base64 Data URI for the PDF (application/pdf)
 } catch (error) {
-  // Library provides descriptive Zod errors if inputs are invalid
   console.error('Label Error:', error.message);
 }
 ```
@@ -135,11 +119,14 @@ if (result.matches) {
 
 ## Technical Notes
 
+### Stable Entry Points
+The library uses `index.ts` in the root as a stable export barrel. This means internal file restructuring (like moving code into `src/`) will not break your existing imports as long as you import from the root package.
+
 ### Zod Coercion
-The library uses `z.coerce.number()` for all numeric fields (weight, dimensions). This means you can safely pass values directly from `FormData.get()` or query parameters without manual `parseFloat()` calls.
+We use `z.coerce.number()` for all numeric fields. You can safely pass values directly from `FormData.get()` without manual conversion.
 
 ### Server Logging
-The client includes built-in logging to help you track which USPS endpoints are being reached. You will see `[USPS]` prefixed logs in your server console during requests.
+Requests are logged to the console with the `[USPS]` prefix to help you debug endpoint interactions in real-time.
 
 ## License
 

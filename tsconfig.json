@@ -13,6 +13,7 @@
   },
   "include": [
     "index.ts",
+    "USPSClient.ts",
     "src/**/*"
   ],
   "exclude": [

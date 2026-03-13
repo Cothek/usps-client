@@ -15,6 +15,9 @@ import {
   LabelConfigSchema 
 } from './schemas.js';
 
+/**
+ * USPSClient - A hardened client for the USPS v3 APIs.
+ */
 export default class USPSClient {
   private config: UspsClientConfig;
 
@@ -167,16 +170,14 @@ export default class USPSClient {
     const isProduction = this.config.env === 'production';
     const uspsApiBaseUrl = isProduction ? 'https://apis.usps.com' : 'https://apis-tem.usps.com';
     
-    // Use instance credentials or config, but verify they exist here
-    const mid = validatedConfig.mid || this.config.mid;
-    const crid = validatedConfig.crid || this.config.crid;
-    const epsAccountNumber = validatedConfig.epsAccountNumber || this.config.epsAccountNumber;
+    const mid = this.config.mid;
+    const crid = this.config.crid;
+    const epsAccountNumber = this.config.epsAccountNumber;
 
     if (!mid || !crid || !epsAccountNumber) {
-      throw new Error("Missing required USPS account credentials (MID, CRID, or EPS Account Number) for label generation. Please provide them in the constructor or the createLabel configuration.");
+      throw new Error("Missing required USPS account credentials (MID, CRID, or EPS Account Number) for label generation. Please provide them in the constructor.");
     }
 
-    // Payment Authorization
     const paymentAuthUrl = `${uspsApiBaseUrl}/payments/v3/payment-authorization`;
     console.log(`[USPS] Requesting payment authorization from: ${paymentAuthUrl}`);
     
@@ -198,7 +199,6 @@ export default class USPSClient {
     }
     const { paymentAuthorizationToken: paymentToken } = await paymentResponse.json();
 
-    // Label Generation
     const { zipCode: fromZip, ...fromRest } = validatedConfig.fromAddress;
     const { zipCode: toZip, ...toRest } = validatedConfig.toAddress;
     
