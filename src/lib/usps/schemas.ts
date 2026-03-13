@@ -12,20 +12,26 @@ export const UspsClientConfigSchema = z.object({
   consumerSecret: z.string().min(1, "Consumer Secret is required"),
   env: z.enum(['production', 'development']),
   originZipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code format"),
-  // Account level credentials are now optional at the client level
   mid: z.string().optional(),
   crid: z.string().optional(),
   epsAccountNumber: z.string().optional(),
 });
 
 export const AddressSchema = z.object({
-  name: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
   firm: z.string().optional(),
   streetAddress: z.string().min(1, "Street address is required"),
   secondaryAddress: z.string().optional(),
   city: z.string().min(1, "City is required"),
   state: z.string().length(2, "State must be a 2-letter code"),
   zipCode: z.string().regex(/^\d{5}(-\d{4})?$/, "Invalid ZIP code"),
+}).refine(data => {
+  // USPS Label API requires (firstName AND lastName) OR firm
+  return (data.firstName && data.lastName) || data.firm;
+}, {
+  message: "Either (firstName AND lastName) or firm name must be provided",
+  path: ["firstName"]
 });
 
 export const RateRequestSchema = z.object({
@@ -39,9 +45,6 @@ export const RateRequestSchema = z.object({
 });
 
 export const LabelConfigSchema = z.object({
-  mid: z.string().optional(),
-  crid: z.string().optional(),
-  epsAccountNumber: z.string().optional(),
   fromAddress: AddressSchema,
   toAddress: AddressSchema,
   packageDetails: z.object({

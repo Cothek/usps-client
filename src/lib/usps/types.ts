@@ -13,7 +13,8 @@ export interface UspsClientConfig {
 }
 
 export interface AddressForValidation {
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   firm?: string;
   streetAddress: string;
   secondaryAddress?: string;
@@ -48,9 +49,6 @@ export interface Rate {
 }
 
 export interface LabelConfig {
-  mid?: string;
-  crid?: string;
-  epsAccountNumber?: string;
   fromAddress: AddressForValidation;
   toAddress: AddressForValidation;
   packageDetails: {

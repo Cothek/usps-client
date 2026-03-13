@@ -38,45 +38,23 @@ const uspsClient = new USPSClient({
 
 ## Usage
 
-### 1. Get Shipping Rates (Hardened)
+### 1. Create a Shipping Label
 
-The library handles conversion from string inputs (like those from `FormData`) automatically using Zod coercion.
-
-```typescript
-try {
-  const rates = await uspsClient.getRates({
-    destinationZipCode: '90210',
-    weightLbs: "1.5", // Automatically coerced from string
-    weightOz: 0,
-    lengthIn: 10,
-    widthIn: 8,
-    heightIn: 4,
-    // Optional: Filter for specific service types
-    enabledServices: ['PRIORITY_MAIL', 'USPS_GROUND_ADVANTAGE']
-  });
-
-  console.log('Available Rates:', rates);
-} catch (error) {
-  console.error('Rate Error:', error.message);
-}
-```
-
-### 2. Create a Shipping Label
-
-Generates a print-ready 4x6 label. Credentials provided in the constructor are used automatically. All package details required by the USPS API must be provided.
+Generates a print-ready 4x6 label. Address information requires either `firstName` and `lastName`, or a `firm` name.
 
 ```typescript
 try {
   const label = await uspsClient.createLabel({
     fromAddress: {
-      name: 'John Doe',
+      firstName: 'John',
+      lastName: 'Doe',
       streetAddress: '123 Main St',
       city: 'Anytown',
       state: 'NY',
       zipCode: '10001',
     },
     toAddress: {
-      name: 'Jane Smith',
+      firm: 'ACME Corp',
       streetAddress: '456 Side St',
       city: 'Othertown',
       state: 'CA',
@@ -91,15 +69,28 @@ try {
       length: 12,
       width: 9,
       height: 6,
-      mailingDate: '2025-01-01', // YYYY-MM-DD
+      mailingDate: '2025-03-12', // YYYY-MM-DD
     },
   });
 
   console.log('Tracking Number:', label.trackingNumber);
-  // label.labelUrl is a base64 Data URI for the PDF (application/pdf)
 } catch (error) {
   console.error('Label Error:', error.message);
 }
+```
+
+### 2. Get Shipping Rates
+
+```typescript
+const rates = await uspsClient.getRates({
+  destinationZipCode: '90210',
+  weightLbs: "1.5", // Automatically coerced from string
+  weightOz: 0,
+  lengthIn: 10,
+  widthIn: 8,
+  heightIn: 4,
+  enabledServices: ['PRIORITY_MAIL', 'USPS_GROUND_ADVANTAGE']
+});
 ```
 
 ### 3. Address Validation
@@ -108,24 +99,19 @@ Standardizes an address to USPS format.
 
 ```typescript
 const result = await uspsClient.validateAddress({
+  firstName: 'John',
+  lastName: 'Doe',
   streetAddress: '123 main st',
   city: 'anytown',
   state: 'NY',
   zipCode: '10001',
 });
-
-if (result.matches) {
-  console.log('Standardized Address:', result.validated);
-}
 ```
 
 ## Technical Notes
 
-### Stable Entry Points
-The library uses `index.ts` in the root as a stable export barrel. This means internal file restructuring (like moving code into `src/`) will not break your existing imports as long as you import from the root package.
-
-### Zod Coercion
-We use `z.coerce.number()` for all numeric fields. You can safely pass values directly from `FormData.get()` without manual conversion.
+### Zod Validation
+The library uses strict Zod schemas. For addresses, you **must** provide either `firstName` AND `lastName`, or a `firm` name. Failing to do so will result in a validation error before the API is even called.
 
 ### Server Logging
 Requests are logged to the console with the `[USPS]` prefix to help you debug endpoint interactions in real-time.

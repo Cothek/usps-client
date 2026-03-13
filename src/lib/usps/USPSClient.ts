@@ -175,7 +175,7 @@ export default class USPSClient {
     const epsAccountNumber = this.config.epsAccountNumber;
 
     if (!mid || !crid || !epsAccountNumber) {
-      throw new Error("Missing required USPS account credentials (MID, CRID, or EPS Account Number) for label generation. Please provide them in the constructor.");
+      throw new Error("Missing required USPS account credentials (MID, CRID, or EPS Account Number) for label generation. Please provide them in the USPSClient constructor.");
     }
 
     const paymentAuthUrl = `${uspsApiBaseUrl}/payments/v3/payment-authorization`;
@@ -199,13 +199,15 @@ export default class USPSClient {
     }
     const { paymentAuthorizationToken: paymentToken } = await paymentResponse.json();
 
-    const { zipCode: fromZip, ...fromRest } = validatedConfig.fromAddress;
-    const { zipCode: toZip, ...toRest } = validatedConfig.toAddress;
+    const formatAddress = (addr: any) => {
+      const { zipCode, ...rest } = addr;
+      return { ...rest, ZIPCode: zipCode };
+    };
     
     const labelBody = {
       requester: { requesterId: mid, mailingActivity: 'PERMIT_HOLDER_OR_END_USER' },
-      fromAddress: { ...fromRest, ZIPCode: fromZip },
-      toAddress: { ...toRest, ZIPCode: toZip },
+      fromAddress: formatAddress(validatedConfig.fromAddress),
+      toAddress: formatAddress(validatedConfig.toAddress),
       packageDescription: {
         ...validatedConfig.packageDetails,
         unitOfMeasure: 'POUND',
@@ -228,7 +230,10 @@ export default class USPSClient {
       body: JSON.stringify(labelBody),
     });
 
-    if (!labelResponse.ok) throw new Error(`Label API failed: ${await labelResponse.text()}`);
+    if (!labelResponse.ok) {
+      const errorText = await labelResponse.text();
+      throw new Error(`Label API failed: ${errorText}`);
+    }
 
     const responseText = await labelResponse.text();
     const boundaryMatch = labelResponse.headers.get('Content-Type')?.match(/boundary=(.+)/);
